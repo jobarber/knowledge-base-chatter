@@ -1,5 +1,8 @@
 import json
+import os
+import re
 
+import joblib
 import torch
 import torch.nn as nn
 from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
@@ -36,23 +39,32 @@ class LongQAModel(nn.Module):
         self.r_model = DPRReader.from_pretrained('facebook/dpr-reader-single-nq-base').to(device)
         self.r_tokenizer = DPRReaderTokenizerFast.from_pretrained('facebook/dpr-reader-single-nq-base')
         self.contexts = contexts
-        with open('contexts.json', 'w') as f:
-            json.dump(self.contexts, f)
         # Not enough time to load context embeddings in AWS SageMaker,
         # but can fill weights from saved state dict after loading model.
-        if not fill_context_embeddings:
-            output_features = self.c_model.ctx_encoder.bert_model.pooler.dense.out_features
-            self.context_embeddings = nn.Parameter(torch.zeros(len(self.contexts), output_features)).to(device)
-        else:
-            context_embeddings = []
-            with torch.no_grad():
-               for context in self.contexts:
-                   input_ids = self.c_tokenizer(context, return_tensors='pt').to(device)["input_ids"]
-                   output = self.c_model(input_ids)
-                   context_embeddings.append(output.pooler_output)
-            self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0)).to(device)
+        if not self.contexts:
+            with open('code/contexts.json') as f:
+                self.contexts = json.load(f)
+#             output_features = self.c_model.ctx_encoder.bert_model.pooler.dense.out_features
+#             self.context_embeddings = nn.Parameter(torch.zeros(len(self.contexts), output_features)).to(device)
+#         else:
+        context_embeddings = []
+        with torch.no_grad():
+           for context in self.contexts:
+               input_ids = self.c_tokenizer(context, return_tensors='pt').to(device)["input_ids"]
+               output = self.c_model(input_ids)
+               context_embeddings.append(output.pooler_output)
+        self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0)).to(device)
+        print('cwd!:', os.getcwd())
+        print(os.listdir('code'))
+        self.noise_remover = joblib.load('code/filter_model.sav')
 
     def forward(self, question, retrieval_only=False):
+        question_sentences = re.findall(r'[^.!?\n]+[.!?]', question)
+        filtered_sentences = []
+        for sentence in question_sentences:
+            if (self.noise_remover.predict([sentence])) == 'Relevant':
+                filtered_sentences.append(sentence)
+        question = ' '.join(filtered_sentences) or question  # if filtered sents removes everything, use question
         q_input_ids = self.q_tokenizer(question, return_tensors='pt').to(self.device)['input_ids']
         q_output = self.q_model(q_input_ids)
         q_embedding = q_output.pooler_output
