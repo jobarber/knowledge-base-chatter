@@ -42,7 +42,3 @@ def mlm_metric(prompt, response):
             prob = preds[response_id].item()
         probs.append(prob)
     return -torch.sum(torch.tensor(probs))
-
-
-if __name__ == '__main__':
-    print(mlm_metric('How do I change my password?', 'You do not.'))

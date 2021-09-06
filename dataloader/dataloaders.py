@@ -2,7 +2,7 @@ import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 
-from utils.preprocessing.data import convert_str_indices_to_token_indices
+from utils.preprocessing import convert_str_indices_to_token_indices
 
 
 class ReaderDataset(Dataset):
@@ -83,10 +83,3 @@ def base_dataloader(*paths, split=None, **kwargs):
     if split is not None:
         return DataLoader(load_dataset(*paths, split=split, **kwargs))
     return load_dataset(*paths, split=split, **kwargs)
-
-
-# if __name__ == '__main__':
-#     dataloader = base_dataloader('glue', 'mrpc', split='train')
-#     for batch in dataloader:
-#         print(batch)
-#         break
