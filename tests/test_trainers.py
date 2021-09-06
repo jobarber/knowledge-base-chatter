@@ -12,18 +12,18 @@ def test_dpr_trainer():
 
     qa_dicts = []
     paragraphs = json_response['data'][0]['paragraphs']
-    for paragraph in paragraphs[:100]:
+    for paragraph in paragraphs[:20]:
         context = paragraph['context']
         qas = paragraph['qas']
         for qa in qas:
             answer = qa['answers'][0]
-            if answer['answer_start'] >= 20:
+            if answer['answer_start'] >= 100:
                 continue
             sample = dict(context=context, answer=answer['text'], question=qa['question'])
             qa_dicts.append(sample)
 
     # instantiate model
-    model = LongQAModel(contexts=list(set(d['context'][:20] for d in qa_dicts)))
+    model = LongQAModel(contexts=list(set(d['context'][:100] for d in qa_dicts)))
 
     # get data loader
     train_dataloader = dataloader(qa_dicts,

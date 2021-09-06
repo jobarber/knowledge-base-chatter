@@ -1,6 +1,5 @@
 import json
 
-import requests
 import torch
 
 from models.retrievalmodel import LongQAModel
