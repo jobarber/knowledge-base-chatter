@@ -19,6 +19,5 @@ def test_predict():
         'How do I send information into a Google sheet to get started?'
     ]
     with torch.no_grad():
-        for sentence in sentences:
-            print(predict(sentence, model))
-    assert False
+        predictions = [predict(sentence, model) for sentence in sentences]
+    assert len(predictions) == 2

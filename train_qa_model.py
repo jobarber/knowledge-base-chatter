@@ -5,7 +5,7 @@ from models.retrievalmodel import LongQAModel
 from trainer.trainers import Trainer
 
 
-def train_qa_model():
+def train_qa_model(epochs=5):
     json_response = requests.get(
         'https://www.dropbox.com/s/uge6kufl37x77h0/squad_formatted_train_20210704.json?dl=1').json()
     qa_dicts = []
@@ -41,23 +41,10 @@ def train_qa_model():
                       dataloader=train_dataloader,
                       validation_dataloader=valid_dataloader,
                       lr=1e-5,
-                      epochs=251,
+                      epochs=epochs,
                       weight_decay=3e-1)
     trainer.train()
 
 
 if __name__ == '__main__':
-
-    # import ssl
-    # ssl._create_default_https_context = ssl._create_unverified_context
-
-    # get Slack data
-    # df = pd.read_json('https://www.dropbox.com/s/r7iwb6qpk73jhrk/qas.json?dl=1')
-    # df1 = pd.read_csv('https://www.dropbox.com/s/by3dcp6y07g3g2q/slack_samples.csv?dl=1')
-    # df2 = pd.read_csv('https://www.dropbox.com/s/30jgxxwkyy1ywir/slack_tips_qa_nodup_answer_start.csv?dl=1')
-    # df2['question'] = df2['Question']
-    # df2['answer'] = df2['Answer']
-    # df2['context'] = df2['Context']
-    # df = df1.append(df2[['question', 'answer', 'context']]).sample(frac=1.)
-
     train_qa_model()

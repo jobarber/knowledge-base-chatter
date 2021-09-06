@@ -19,21 +19,3 @@ def predict(question, model):
 
     best_answers = [(b[0].upper() + b[1:]) if len(b) > 1 else b.upper() for b in best_answers]
     return best_answers
-
-
-if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    with open('contexts.json') as f:
-        contexts = json.load(f)
-    model = LongQAModel(contexts=contexts)
-    model.load_state_dict(torch.load('modeldata/model_59_valid_accuracy=0.4741_valid_loss=2.7002.pt'))
-    model = model.to(device)
-    model.eval()
-    sentences = [
-        'To Send information into a Google Sheet get started',
-        'How do I send information into a Google sheet to get started?'
-    ]
-    with torch.no_grad():
-        for sentence in sentences:
-            print(predict(sentence, model))

@@ -1,3 +1,4 @@
+import pytest
 import requests
 from sklearn import metrics
 
@@ -6,6 +7,7 @@ from models.retrievalmodel import LongQAModel
 from trainer.trainers import Trainer
 
 
+@pytest.mark.skip(reason="this test takes a long time")
 def test_dpr_trainer():
     json_response = requests.get(
         'https://www.dropbox.com/s/uge6kufl37x77h0/squad_formatted_train_20210704.json?dl=1').json()
