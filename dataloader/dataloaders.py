@@ -45,8 +45,10 @@ class ReaderDataset(Dataset):
             start_str_index = 0
             end_str_index = 0
         span_indices = convert_str_indices_to_token_indices(
-            self.tokenizer, context,
-            [start_str_index, end_str_index], test=False)
+            context,
+            start_str_index,
+            end_str_index,
+            self.tokenizer)
         targets = span_indices
         return self.qa_dicts[item]['question'], context, torch.tensor(targets)
 
@@ -58,28 +60,3 @@ def dataloader(qa_dicts, fast_tokenizer, batch_size=1, split='train', train_size
     return DataLoader(ReaderDataset(
         qa_dicts, fast_tokenizer=fast_tokenizer, split=split, train_size=train_size, ), batch_size=batch_size,
         **kwargs)
-
-
-def base_dataloader(*paths, split=None, **kwargs):
-    """
-    Loads a base dataloader from `datasets`.
-
-    Parameters
-    ----------
-    paths : str or sequence of str
-        Path(s) pointing to the dataset processing script. Can be a
-        dataset identifier in HuggingFace Datasets of a local
-        path.
-    split : str
-        The split of the `dataset` to download (e.g., 'train').
-    kwargs : dict
-        Additional keyword arguments to pass to `load_dataset`.
-
-    Returns
-    -------
-    `Dataset` or `DatasetDict`. If `split` is None, a `datasets.DatasetDict`
-    is returned. Otherwise, the dataset is returned.
-    """
-    if split is not None:
-        return DataLoader(load_dataset(*paths, split=split, **kwargs))
-    return load_dataset(*paths, split=split, **kwargs)

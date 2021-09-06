@@ -45,7 +45,7 @@ class Trainer:
                  validation_dataloader=None,
                  criterion=nn.CrossEntropyLoss(),
                  optimizer=optim.AdamW,
-                 val_metrics=['accuracy'],
+                 val_metrics=['accuracy', 'f1', 'precision', 'recall'],
                  epochs=3,
                  lr=2e-5,
                  device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
@@ -110,7 +110,12 @@ class Trainer:
             print('predicted answer:', self.tokenizer.decode(tokenized['input_ids'][-1][argmax[-1][0]:argmax[-1][1]]))
             print('actual answer:', self.tokenizer.decode(tokenized['input_ids'][-1][targets[-1][0]:targets[-1][1]]))
         y_true, y_pred = torch.tensor(y_true).numpy(), torch.tensor(y_pred).numpy()
-        metric_scores = {metric: self._metric_functions.get(metric, metric)(y_true, y_pred) for metric in self.metrics}
+        metric_scores = {}
+        for metric in self.metrics:
+            if metric == 'accuracy':
+                metric_scores[metric] = self._metric_functions.get(metric, metric)(y_true, y_pred)
+            else:
+                metric_scores[metric] = self._metric_functions.get(metric, metric)(y_true, y_pred, average='macro')
         print(f'VALIDATION Epoch: {self._current_epoch} Batch: {b + 1} '
               f'Running Context Loss: {running_loss / (b + 1)} '
               f'Context Loss: {loss.item()} Metrics: {metric_scores}')
@@ -156,7 +161,7 @@ class Trainer:
             self._train_epoch()
             validation_results = self._run_validation()
             filename_args = [f'valid_{k}={v:.4f}' for k, v in sorted(validation_results.items())]
-            if self._current_epoch % 0 == 4:
+            if self._current_epoch % 4 == 0:
                 torch.save(self.model.to('cpu').state_dict(),
                            os.path.join(
                                'modeldata',
@@ -164,3 +169,4 @@ class Trainer:
                            ))
             self.model = self.model.to(self.device)
             self._current_epoch += 1
+        return validation_results
