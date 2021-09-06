@@ -80,20 +80,12 @@ class Trainer:
         running_loss = 0.
         y_true, y_pred = [], []
         for b, batch in enumerate(self.validation_dataloader):
-            fast_kwargs = dict(return_offsets_mapping=True) if self.tokenizer.is_fast else {}
             questions, contexts, targets = batch
-            # questions = batch.pop('question', None)
-            # contexts = batch.pop('context', None)
-            # texts = batch.pop('text', None)
-            # targets = batch.pop('target')
-            max_str_length = len(questions[0]) + len(contexts[0])
             inputs = list(zip(questions, contexts))
             tokenized = self.tokenizer(inputs,
                                        max_length=512,
                                        padding=True,
                                        return_tensors='pt',
-                                       # return_overflowing_tokens=True,
-                                       # stride=10 if max_str_length > 45 else 0,  # TODO: make this more robust
                                        ).to(self.device)
             with torch.no_grad():
                 outputs = self.module_to_train(**tokenized)
