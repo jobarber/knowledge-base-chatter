@@ -1,6 +1,6 @@
 import requests
 
-from dataloader.dataloaders import dataloader
+from dataloader.dataloaders import question_answer_dataloader
 from models.retrievalmodel import LongQAModel
 from trainer.trainers import Trainer
 
@@ -22,18 +22,18 @@ def train_qa_model(epochs=5):
     model = LongQAModel(contexts=list(set(d['context'][:2000] for d in qa_dicts)))
 
     # get data loaders
-    train_dataloader = dataloader(qa_dicts,
-                                  fast_tokenizer=model.r_tokenizer,
-                                  split='train',
-                                  batch_size=32,
-                                  train_size=0.9,
-                                  shuffle=True)
-    valid_dataloader = dataloader(qa_dicts,
-                                  fast_tokenizer=model.r_tokenizer,
-                                  split='valid',
-                                  batch_size=32,
-                                  train_size=0.9,
-                                  shuffle=True)
+    train_dataloader = question_answer_dataloader(qa_dicts,
+                                                  fast_tokenizer=model.r_tokenizer,
+                                                  split='train',
+                                                  batch_size=32,
+                                                  train_size=0.9,
+                                                  shuffle=True)
+    valid_dataloader = question_answer_dataloader(qa_dicts,
+                                                  fast_tokenizer=model.r_tokenizer,
+                                                  split='valid',
+                                                  batch_size=32,
+                                                  train_size=0.9,
+                                                  shuffle=True)
     # train model
     trainer = Trainer(model,
                       submodule_to_train='r_model',

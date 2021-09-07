@@ -53,12 +53,7 @@ class Trainer:
         self.model = model.to(device)
         self.module_to_train = getattr(model, submodule_to_train) if submodule_to_train else model
         if self.module_to_train is not None:
-            self.model.eval()
-            for param in self.model.parameters():
-                param.requires_grad = False
-            self.module_to_train.train()
-            for param in self.module_to_train.parameters():
-                param.requires_grad = True
+            self._focus_params_and_dropouts()
         self.tokenizer = tokenizer
         self.dataloader = dataloader
         self.validation_dataloader = validation_dataloader
@@ -74,6 +69,14 @@ class Trainer:
             'precision': metrics.precision_score,
             'recall': metrics.recall_score
         }
+
+    def _focus_params_and_dropouts(self):
+        self.model.eval()
+        for param in self.model.parameters():
+            param.requires_grad = False
+        self.module_to_train.train()
+        for param in self.module_to_train.parameters():
+            param.requires_grad = True
 
     def _run_validation(self):
         self.module_to_train.eval()
@@ -117,22 +120,14 @@ class Trainer:
         self.module_to_train.train()
         running_loss = 0.
         for b, batch in enumerate(self.dataloader):
-            fast_kwargs = dict(return_offsets_mapping=True) if self.tokenizer.is_fast else {}
             questions, contexts, targets = batch
-            # questions = batch.pop('question', None)
-            # contexts = batch.pop('context', None)
-            # texts = batch.pop('text', None)
-            # targets = batch.pop('target')
-            max_str_length = len(questions[0]) + len(contexts[0])
             inputs = list(zip(questions, contexts))
             tokenized = self.tokenizer(inputs,
                                        max_length=512,
                                        padding=True,
                                        return_tensors='pt',
-                                       # return_overflowing_tokens=True,
-                                       # stride=10 if max_str_length > 45 else 0,  # TODO: make this more robust
                                        ).to(self.device)
-            targets = targets.to(self.device)  # TODO: adjust if question-contexts converted to multiple tensors
+            targets = targets.to(self.device)
             outputs = self.module_to_train(**tokenized)
             logits = outputs.get('logits',
                                  outputs.get('last_hidden_state',
@@ -162,3 +157,23 @@ class Trainer:
             self.model = self.model.to(self.device)
             self._current_epoch += 1
         return validation_results
+
+
+class QuestionGeneratorTrainer:
+
+    def __init__(self, model, dataloader, epochs=3):
+        self.model = model
+        self.dataloader = dataloader
+        self.epochs = epochs
+
+    def _run_validation(self):
+        pass
+
+    def _train_epoch(self):
+        for epoch in range(self.epochs):
+            running_loss = 0.
+            for b, batch in enumerate(self.dataloader):
+                pass
+
+    def train(self):
+        pass
