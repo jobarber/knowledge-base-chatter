@@ -1,8 +1,4 @@
-import json
-
 import torch
-
-from models.retrievalmodel import LongQAModel
 
 
 def predict(question, model):

@@ -82,28 +82,19 @@ class Trainer:
         self.module_to_train.eval()
         running_loss = 0.
         y_true, y_pred = [], []
+
+        # get all predictions for every batch in validation dataloader
         for b, batch in enumerate(self.validation_dataloader):
-            questions, contexts, targets = batch
-            inputs = list(zip(questions, contexts))
-            tokenized = self.tokenizer(inputs,
-                                       max_length=512,
-                                       padding=True,
-                                       return_tensors='pt',
-                                       ).to(self.device)
             with torch.no_grad():
-                outputs = self.module_to_train(**tokenized)
-                logits = outputs.get('logits',
-                                     outputs.get('last_hidden_state',
-                                                 torch.stack([outputs.start_logits, outputs.end_logits], dim=-1)))
-                loss = self.criterion(logits, targets.to(self.device))
-                argmax = torch.argmax(logits, dim=-2)
-                y_pred.extend(argmax.flatten().cpu().detach().tolist())
-                y_true.extend(torch.tensor(targets).flatten().tolist())
+                argmax, loss, questions, targets, tokenized = self._run_batch(batch, y_pred, y_true)
             running_loss += loss.item()
         else:
+            # check to see if a prediction seems reasonable
             print(questions[-1])
             print('predicted answer:', self.tokenizer.decode(tokenized['input_ids'][-1][argmax[-1][0]:argmax[-1][1]]))
             print('actual answer:', self.tokenizer.decode(tokenized['input_ids'][-1][targets[-1][0]:targets[-1][1]]))
+
+        # calculate metrics
         y_true, y_pred = torch.tensor(y_true).numpy(), torch.tensor(y_pred).numpy()
         metric_scores = {}
         for metric in self.metrics:
@@ -114,25 +105,34 @@ class Trainer:
         print(f'VALIDATION Epoch: {self._current_epoch} Batch: {b + 1} '
               f'Running Context Loss: {running_loss / (b + 1)} '
               f'Context Loss: {loss.item()} Metrics: {metric_scores}')
+
         return dict(loss=running_loss / (b + 1), **metric_scores)
+
+    def _run_batch(self, batch, y_pred, y_true, task=):
+        questions, contexts, targets = batch
+        inputs = list(zip(questions, contexts))
+        targets = targets.to(self.device)
+        tokenized = self.tokenizer(inputs,
+                                   max_length=512,
+                                   padding=True,
+                                   return_tensors='pt',
+                                   ).to(self.device)
+        outputs = self.module_to_train(**tokenized)
+        logits = outputs.get('logits',
+                             outputs.get('last_hidden_state',
+                                         torch.stack([outputs.start_logits, outputs.end_logits], dim=-1)))
+        loss = self.criterion(logits, targets.to(self.device))
+        argmax = torch.argmax(logits, dim=-2)
+        y_pred.extend(argmax.flatten().cpu().detach().tolist())
+        y_true.extend(torch.tensor(targets).flatten().tolist())
+        return argmax, loss, questions, targets, tokenized
 
     def _train_epoch(self):
         self.module_to_train.train()
         running_loss = 0.
+        y_true, y_pred = [], []
         for b, batch in enumerate(self.dataloader):
-            questions, contexts, targets = batch
-            inputs = list(zip(questions, contexts))
-            tokenized = self.tokenizer(inputs,
-                                       max_length=512,
-                                       padding=True,
-                                       return_tensors='pt',
-                                       ).to(self.device)
-            targets = targets.to(self.device)
-            outputs = self.module_to_train(**tokenized)
-            logits = outputs.get('logits',
-                                 outputs.get('last_hidden_state',
-                                             torch.stack([outputs.start_logits, outputs.end_logits], dim=-1)))
-            loss = self.criterion(logits, targets)
+            argmax, loss, questions, targets, tokenized = self._run_batch(batch, y_pred, y_true)
             running_loss += loss.item()
 
             loss.backward()
@@ -157,23 +157,3 @@ class Trainer:
             self.model = self.model.to(self.device)
             self._current_epoch += 1
         return validation_results
-
-
-class QuestionGeneratorTrainer:
-
-    def __init__(self, model, dataloader, epochs=3):
-        self.model = model
-        self.dataloader = dataloader
-        self.epochs = epochs
-
-    def _run_validation(self):
-        pass
-
-    def _train_epoch(self):
-        for epoch in range(self.epochs):
-            running_loss = 0.
-            for b, batch in enumerate(self.dataloader):
-                pass
-
-    def train(self):
-        pass

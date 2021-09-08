@@ -39,7 +39,7 @@ class T5QuestionGenerator(nn.Module):
                                                    return_tensors='pt',
                                                    padding=True).to(self.device)
 
-        # Tokenize questions, if they exist, as labels
+        # Tokenize questions--if they exist--as labels
         labels = None
         if questions:
             labels = self.tokenizer(questions,
