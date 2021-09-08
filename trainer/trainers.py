@@ -108,7 +108,7 @@ class Trainer:
 
         return dict(loss=running_loss / (b + 1), **metric_scores)
 
-    def _run_batch(self, batch, y_pred, y_true, task=):
+    def _run_batch(self, batch, y_pred, y_true):
         questions, contexts, targets = batch
         inputs = list(zip(questions, contexts))
         targets = targets.to(self.device)
@@ -118,11 +118,13 @@ class Trainer:
                                    return_tensors='pt',
                                    ).to(self.device)
         outputs = self.module_to_train(**tokenized)
-        logits = outputs.get('logits',
-                             outputs.get('last_hidden_state',
+        logits = outputs.get('logits',  # high-level model
+                             outputs.get('last_hidden_state',  # bare model
+                                         # or traditional question-answer model
                                          torch.stack([outputs.start_logits, outputs.end_logits], dim=-1)))
         loss = self.criterion(logits, targets.to(self.device))
-        argmax = torch.argmax(logits, dim=-2)
+        argmax = torch.argmax(logits, dim=-2) if logits.shape[-1] == 2 else torch.argmax(logits, dim=-1)
+        print(logits.shape)
         y_pred.extend(argmax.flatten().cpu().detach().tolist())
         y_true.extend(torch.tensor(targets).flatten().tolist())
         return argmax, loss, questions, targets, tokenized

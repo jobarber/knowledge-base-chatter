@@ -52,12 +52,12 @@ class LongQAModel(nn.Module):
                    context_embeddings.append(output.pooler_output)
             self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0)).to(device)
 
-    def forward(self, question, retrieval_only=False):
+    def forward(self, question, retrieval_only=False, topk=10):
         q_input_ids = self.q_tokenizer(question, return_tensors='pt').to(self.device)['input_ids']
         q_output = self.q_model(q_input_ids)
         q_embedding = q_output.pooler_output
         similarities = torch.matmul(q_embedding, self.context_embeddings.T)
-        topk_similarities = torch.topk(similarities[0], k=10, dim=-1)
+        topk_similarities = torch.topk(similarities[0], k=min(topk, len(self.context_embeddings)), dim=-1)
         contexts = [self.contexts[i] for i in topk_similarities.indices]
         if retrieval_only:
             return contexts
