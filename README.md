@@ -39,4 +39,4 @@ By default, it trains on the Slack deal with script from the web.
 To run inference on the model in AWS, see the `awsdeployment/deployment.ipynb` notebook.
 The files in AWS deployment need also to be uploaded to the directory of the SageMaker notebook.
 
-We will except command line arguments soon.
+We will accept command line arguments soon.
