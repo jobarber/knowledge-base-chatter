@@ -1,6 +1,6 @@
 # Knowledge Retrieval Framework using T5 and Bert
 
-This github has all the pieces for creating a knowledge retrieval and dialog system using a free text corpus.
+This knowledge retrieval system was created by Justin Barber, Russell Chen, and Ritu Singhal. This repo has all the pieces for creating a knowledge retrieval and dialog system using a free text corpus.
 
 ## Pipeline
   ![Pipeline](Pipeline.png)
